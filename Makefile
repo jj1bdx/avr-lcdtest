@@ -21,7 +21,7 @@ CFLAGS += -Wall -Os -g -DF_CPU=16000000UL -D__AVR_ATmega328P__
 CFLAGS += -MD -MP -MT $(*F).o -MF $(@F).d 
 
 CXXFLAGS = $(COMMON)
-CXXFLAGS += -DF_CPU=16000000UL -D__AVR_ATmega328P__
+CXXFLAGS += -Wall -Os -g -DF_CPU=16000000UL -D__AVR_ATmega328P__
 CXXFLAGS += -MD -MP -MT $(*F).o -MF $(@F).d 
 
 ## Linker flags
@@ -36,21 +36,11 @@ HEX_EEPROM_FLAGS += --set-section-flags=.eeprom="alloc,load"
 HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
 ## Objects that must be built in order to link
-OBJECTS = avr-lcdtest.o \
-	AVRTools/I2cLcd.o \
-	AVRTools/I2cMaster.o \
-	AVRTools/InitSystem.o \
-	AVRTools/Reader.o \
-	AVRTools/RingBuffer.o \
-	AVRTools/SystemClock.o \
-	AVRTools/USART0.o \
-	AVRTools/USART0Minimal.o \
-	AVRTools/Writer.o \
-	AVRTools/abi.o \
-	AVRTools/new.o
+OBJECTS = avr-lcdtest.o 
 
 ## Objects explicitly added by the user
-LINKONLYOBJECTS = 
+## CAUTION: build libavrtools.a first
+LINKONLYOBJECTS = AVRTools/libavrtools.a
 
 ## Build
 all: $(TARGET) avr-lcdtest.hex avr-lcdtest.eep avr-lcdtest.lss size
@@ -82,7 +72,6 @@ $(TARGET): $(OBJECTS)
 size: ${TARGET}
 	@echo
 	@avr-size ${TARGET}
-#	@avr-size -C --mcu=${MCU} ${TARGET}
 
 ## Clean target
 .PHONY: clean
