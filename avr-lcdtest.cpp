@@ -31,6 +31,7 @@
 #include "AVRTools/I2cLcd.h"
 
 I2cLcd lcd;
+char number[12];
 
 int main() {
 
@@ -39,23 +40,28 @@ int main() {
     I2cMaster::start();
 
     setGpioPinModeOutput(pPin13);
-
     setGpioPinLow(pPin13);
 
     lcd.init();
     lcd.clear();
     lcd.home();
-    lcd.displayTopRow("Hello,");
-    lcd.displayBottomRow("World!");
+    lcd.autoscrollOff();
+    lcd.setBacklight(0);
+    delayMilliseconds(1000);
     lcd.setBacklight(I2cLcd::kBacklight_Green);
+    lcd.displayTopRow("Hello, World!");
+    delayMilliseconds(1000);
+    lcd.setBacklight(I2cLcd::kBacklight_White);
+    int counter = 0;
 
     for(;;) {
-        delayMilliseconds(500);
-        setGpioPinHigh(pPin13);
-        lcd.setBacklight(I2cLcd::kBacklight_White);
-        delayMilliseconds(500);
-        setGpioPinLow(pPin13);
-        lcd.setBacklight(I2cLcd::kBacklight_Green);
+        for(uint8_t color = 0; color < 8 ; color++) {
+            delayMilliseconds(1000);
+            (void)itoa(counter, number, 10);
+            lcd.displayBottomRow(number);
+            writeGpioPinDigital(pPin13, color % 2);
+            counter++;
+        }
     }
 
 }
