@@ -16,7 +16,6 @@ COMMON = -mmcu=$(MCU)
 
 ## Compile options common for all C compilation units.
 CFLAGS = $(COMMON)
-CFLAGS += -DF_CPU=16000000UL -D__AVR_ATmega328P__
 CFLAGS += -Wall -Os -g -DF_CPU=16000000UL -D__AVR_ATmega328P__
 CFLAGS += -MD -MP -MT $(*F).o -MF $(@F).d 
 
