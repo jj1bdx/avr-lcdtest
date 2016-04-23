@@ -46,9 +46,8 @@ int main() {
 
     double adt0;
     int16_t a0, a1, a2, a3;
-    volatile uint8_t tempbytes[2];
+    uint8_t tempbytes[2];
     uint16_t temp;
-    volatile uint8_t i2cstatus, readbytes;
 
     initSystem();
     initSystemClock();
@@ -63,9 +62,8 @@ int main() {
     setGpioPinModeOutput(pPin13);
     setGpioPinLow(pPin13);
 
-    waiti2c();
-    I2cMaster::writeAsync(ADT7410_ADDRESS, 0x03, 0x80, &i2cstatus);
-    waiti2c();
+    // Set ADT7410 to 15-bit precision mode
+    I2cMaster::writeSync(ADT7410_ADDRESS, 0x03, 0x80);
 
     lcd.init();
     lcd.clear();
@@ -76,13 +74,19 @@ int main() {
     delayMilliseconds(300);
     lcd.clear();
     lcd.setBacklight(I2cLcd::kBacklight_White);
+    waiti2c();
 
     for(;;) {
         for(uint8_t color = 0; color < 8 ; color++) {
-            I2cMaster::readAsync(ADT7410_ADDRESS, 0x00,
-                    sizeof(tempbytes), (volatile uint8_t *)tempbytes,
-                    &readbytes, &i2cstatus);
-            delayMilliseconds(1);
+
+            if (0 == I2cMaster::readSync(ADT7410_ADDRESS, 0x00,
+                    sizeof(tempbytes), tempbytes)) {
+                temp = (tempbytes[0] << 8) | tempbytes[1];
+            } else {
+                temp = 0x8000;
+            }
+            adt0 = ADTTEMP(temp);
+
             a0 = (int16_t)(LM60TEMP(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
                            pPinA00))) + 0.5);
@@ -95,17 +99,6 @@ int main() {
             a3 = (int16_t)(LM60TEMP(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
                            pPinA03))) + 0.5);
-            while((readbytes < sizeof(tempbytes)) &&
-                  ((i2cstatus != I2cMaster::kI2cError) ||
-                   (i2cstatus != I2cMaster::kI2cNotStarted))) {}
-            if (i2cstatus == I2cMaster::kI2cCompletedOk) {
-                temp = (tempbytes[0] << 8) | tempbytes[1];
-            } else {
-                temp = 0x8000;
-            }
-            adt0 = ADTTEMP(temp);
-
-            delayMilliseconds(50);
 
             lcd.setCursor(0, 0);
             lcd.print("ADT: ");
@@ -121,6 +114,8 @@ int main() {
             lcd.print(a3);
             lcd.print((char)0x20);
             writeGpioPinDigital(pPin13, color % 2);
+
+            delayMilliseconds(50);
         }
     }
 
