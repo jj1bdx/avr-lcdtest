@@ -22,22 +22,36 @@
  * THE SOFTWARE.
  */
 
-/* #define F_CPU (16000000UL) */
-
+#include "AVRTools/Analog2Digital.h"
 #include "AVRTools/ArduinoPins.h"
 #include "AVRTools/InitSystem.h"
 #include "AVRTools/SystemClock.h"
 #include "AVRTools/I2cMaster.h"
 #include "AVRTools/I2cLcd.h"
 
+/* requires beaufort sensor shield */
+/* temperature macros */
+
+#define TC1 ((double)1.065) // 1.090/1023*1000
+#define LM60TEMP(x) ((((double)x) * TC1 - 424.0) / 6.25)
+#define ADTTEMP(x) (((double)((int16_t)x)) / (double)128.0)
+
 I2cLcd lcd;
 char number[12];
 
 int main() {
 
+    int16_t a0, a1, a2, a3;
+
     initSystem();
     initSystemClock();
+    initA2D(kA2dReference11V);
     I2cMaster::start();
+
+    setGpioPinModeInput(pPinA00);
+    setGpioPinModeInput(pPinA01);
+    setGpioPinModeInput(pPinA02);
+    setGpioPinModeInput(pPinA03);
 
     setGpioPinModeOutput(pPin13);
     setGpioPinLow(pPin13);
@@ -49,18 +63,34 @@ int main() {
     lcd.setBacklight(0);
     delayMilliseconds(1000);
     lcd.setBacklight(I2cLcd::kBacklight_Green);
-    lcd.displayTopRow("Hello, World!");
+    lcd.displayTopRow("A0-A3 values:");
     delayMilliseconds(1000);
     lcd.setBacklight(I2cLcd::kBacklight_White);
-    int counter = 0;
 
     for(;;) {
         for(uint8_t color = 0; color < 8 ; color++) {
-            delayMilliseconds(1000);
-            (void)itoa(counter, number, 10);
-            lcd.displayBottomRow(number);
+            a0 = (int16_t)(LM60TEMP(
+                   readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
+                           pPinA00))) + 0.5);
+            a1 = (int16_t)(LM60TEMP(
+                   readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
+                           pPinA01))) + 0.5);
+            a2 = (int16_t)(LM60TEMP(
+                   readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
+                           pPinA02))) + 0.5);
+            a3 = (int16_t)(LM60TEMP(
+                   readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
+                           pPinA03))) + 0.5);
+            lcd.setCursor(1, 0);
+            lcd.print(a0);
+            lcd.print((char)0x20);
+            lcd.print(a1);
+            lcd.print((char)0x20);
+            lcd.print(a2);
+            lcd.print((char)0x20);
+            lcd.print(a3);
+            lcd.print((char)0x20);
             writeGpioPinDigital(pPin13, color % 2);
-            counter++;
         }
     }
 
