@@ -42,6 +42,10 @@
 I2cLcd lcd;
 char number[12];
 
+int16_t lm60temp(int16_t adcval) {
+    return (int16_t)(LM60TEMP(adcval) + 0.5);
+}
+
 int main() {
 
     double adt0;
@@ -87,18 +91,18 @@ int main() {
             }
             adt0 = ADTTEMP(temp);
 
-            a0 = (int16_t)(LM60TEMP(
+            a0 = lm60temp(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
-                           pPinA00))) + 0.5);
-            a1 = (int16_t)(LM60TEMP(
+                          pPinA00)));
+            a1 = lm60temp(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
-                           pPinA01))) + 0.5);
-            a2 = (int16_t)(LM60TEMP(
+                          pPinA01)));
+            a2 = lm60temp(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
-                           pPinA02))) + 0.5);
-            a3 = (int16_t)(LM60TEMP(
+                          pPinA02)));
+            a3 = lm60temp(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
-                           pPinA03))) + 0.5);
+                          pPinA03)));
 
             lcd.setCursor(0, 0);
             lcd.print("ADT: ");
