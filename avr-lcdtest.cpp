@@ -36,12 +36,19 @@
 #define LM60TEMP(x) ((((double)x) * TC1 - 424.0) / 6.25)
 #define ADTTEMP(x) (((double)((int16_t)x)) / (double)128.0)
 
+#define ADT7410_ADDRESS 0x48
+#define waiti2c() while(I2cMaster::busy()){}
+
 I2cLcd lcd;
 char number[12];
 
 int main() {
 
+    double adt0;
     int16_t a0, a1, a2, a3;
+    volatile uint8_t tempbytes[2];
+    uint16_t temp;
+    volatile uint8_t i2cstatus, readbytes;
 
     initSystem();
     initSystemClock();
@@ -56,19 +63,26 @@ int main() {
     setGpioPinModeOutput(pPin13);
     setGpioPinLow(pPin13);
 
+    waiti2c();
+    I2cMaster::writeAsync(ADT7410_ADDRESS, 0x03, 0x80, &i2cstatus);
+    waiti2c();
+
     lcd.init();
     lcd.clear();
     lcd.home();
     lcd.autoscrollOff();
-    lcd.setBacklight(0);
-    delayMilliseconds(1000);
     lcd.setBacklight(I2cLcd::kBacklight_Green);
-    lcd.displayTopRow("A0-A3 values:");
-    delayMilliseconds(1000);
+    lcd.displayTopRow("Waiting...");
+    delayMilliseconds(300);
+    lcd.clear();
     lcd.setBacklight(I2cLcd::kBacklight_White);
 
     for(;;) {
         for(uint8_t color = 0; color < 8 ; color++) {
+            I2cMaster::readAsync(ADT7410_ADDRESS, 0x00,
+                    sizeof(tempbytes), (volatile uint8_t *)tempbytes,
+                    &readbytes, &i2cstatus);
+            delayMilliseconds(1);
             a0 = (int16_t)(LM60TEMP(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
                            pPinA00))) + 0.5);
@@ -81,6 +95,22 @@ int main() {
             a3 = (int16_t)(LM60TEMP(
                    readGpioPinAnalogV(makeGpioVarFromGpioPinAnalog(
                            pPinA03))) + 0.5);
+            while((readbytes < sizeof(tempbytes)) &&
+                  ((i2cstatus != I2cMaster::kI2cError) ||
+                   (i2cstatus != I2cMaster::kI2cNotStarted))) {}
+            if (i2cstatus == I2cMaster::kI2cCompletedOk) {
+                temp = (tempbytes[0] << 8) | tempbytes[1];
+            } else {
+                temp = 0x8000;
+            }
+            adt0 = ADTTEMP(temp);
+
+            delayMilliseconds(50);
+
+            lcd.setCursor(0, 0);
+            lcd.print("ADT: ");
+            lcd.print(adt0);
+
             lcd.setCursor(1, 0);
             lcd.print(a0);
             lcd.print((char)0x20);
