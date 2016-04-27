@@ -24,6 +24,17 @@
 
 /* #define F_CPU (16000000UL) */
 
+/* 
+ * Simple character display code from Serial port
+ * 9600bps
+ * Codepoints 0 to 31 (ASCII control codes) are ignored,
+ * except for:
+ *   12 (CTRL/L): clear the LCD and move cursor to the home position
+ *   16 (CTRL/P): set cursor to the upper row
+ *   14 (CTRL/N): set cursor to the lower row
+ * NOTE WELL: CR and LF are IGNORED
+ */
+
 #include "AVRTools/ArduinoPins.h"
 #include "AVRTools/InitSystem.h"
 #include "AVRTools/SystemClock.h"
