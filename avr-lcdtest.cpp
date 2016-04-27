@@ -42,11 +42,8 @@
 #include "AVRTools/I2cLcd.h"
 #include "AVRTools/USART0.h"
 
-I2cLcd lcd;
-char number[12];
-
 int main() {
-
+    I2cLcd lcd;
     int c;
 
     initSystem();
@@ -78,6 +75,7 @@ int main() {
                 // do nothing for all the other control codes
                 // (CR and LF are also ignored)
             } else {
+                // Display other non-control codes
                 lcd.print((char)c);
             }
         }
