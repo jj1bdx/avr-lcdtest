@@ -46,9 +46,8 @@ char number[12];
 
 void LEDsend(uint8_t data) {
 
-    (void)SPI::transmit(data);
-	// Trigger the latch
     setGpioPinLow(pSS);
+    (void)SPI::transmit(data);
     setGpioPinHigh(pSS);
 }
 
@@ -57,22 +56,25 @@ int main() {
     initSystem();
     initSystemClock();
     SPI::enable();
-    SPI::configure(SPI::SPISettings(16000000,
+    // Max 4MHz for slave, 8MHz for master
+    SPI::configure(SPI::SPISettings(8000000,
                 SPI::kMsbFirst, SPI::kSpiMode0));
     setGpioPinHigh(pSS);
 
     for(;;) {
         for(uint32_t counter = 0; counter < 100000000UL; counter++) {
-            uint32_t d = counter;
-            for(uint8_t digit = 0; digit < 8; digit++) {
-                uint8_t i = d % 10;
-                if (d == 0) {
-                    i = 10;
+            if ((counter & 0x0fffUL) == 0) {
+                uint32_t d = counter;
+                for (uint8_t digit = 0; digit < 8; digit++) {
+                    uint8_t i = d % 10;
+                    if (d == 0) {
+                        i = 10;
+                    }
+                    LEDsend(LEDtable[i]);
+                    d = d / 10;
                 }
-                LEDsend(LEDtable[i]);
-                d = d / 10;
+                delay(500);
             }
-            delay(1);
         }
     }
 
