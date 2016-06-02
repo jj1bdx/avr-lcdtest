@@ -35,6 +35,7 @@
 #include "AVRTools/I2cMaster.h"
 #include "AVRTools/I2cLcd.h"
 #include "AVRTools/SPI.h"
+#include "AVRTools/USART0.h"
 
 uint8_t LEDtable[] =
     {0xc0, 0xf9, 0xa4, 0xb0, 0x99,
@@ -85,10 +86,12 @@ int main() {
     uint8_t d;
     uint8_t p[15];
     uint8_t i;
+    uint8_t c;
 
     initSystem();
     initSystemClock();
     I2cMaster::start();
+    USART0::start(9600);
     SPI::enable();
     // Max 4MHz for slave, 8MHz for master
     SPI::configure(SPI::SPISettings(8000000,
@@ -118,7 +121,10 @@ int main() {
         for (i = 0; i < sizeof(p) - 1; i++) {
             p[i] = p[i + 1];
         }
-        p[sizeof(p) - 1] = 0x30 + d;
+        c = 0x30 + d;
+        p[sizeof(p) - 1] = c;
+
+        USART0::write((char)c);
 
         for (i = 0; i < sizeof(p); i++) {
             lcd.print((char)p[i]);
