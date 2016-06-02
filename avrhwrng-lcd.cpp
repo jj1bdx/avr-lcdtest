@@ -34,23 +34,6 @@
 #include "AVRTools/SystemClock.h"
 #include "AVRTools/I2cMaster.h"
 #include "AVRTools/I2cLcd.h"
-#include "AVRTools/SPI.h"
-
-uint8_t LEDtable[] =
-    {0xc0, 0xf9, 0xa4, 0xb0, 0x99,
-     0x92, 0x82, 0xf8, 0x80, 0x90,
-     0xff};
-
-#define pLatch pSS   // pPin10
-#define pData  pMOSI // pPin11
-#define pClock pSCK  // pPin13
-
-void LEDsend(uint8_t data) {
-
-    setGpioPinLow(pSS);
-    (void)SPI::transmit(data);
-    setGpioPinHigh(pSS);
-}
 
 uint8_t rngdice() {
 
@@ -89,11 +72,9 @@ int main() {
     initSystem();
     initSystemClock();
     I2cMaster::start();
-    SPI::enable();
-    // Max 4MHz for slave, 8MHz for master
-    SPI::configure(SPI::SPISettings(8000000,
-                SPI::kMsbFirst, SPI::kSpiMode0));
-    setGpioPinHigh(pSS);
+
+    setGpioPinModeOutput(pPin13);
+    setGpioPinLow(pPin13);
 
     // PRNG bits
     setGpioPinModeInput(pPin07);
@@ -123,11 +104,6 @@ int main() {
         for (i = 0; i < sizeof(p); i++) {
             lcd.print((char)p[i]);
         }
-
-	    for (i = sizeof(p) - 1; i >= (sizeof(p) - 8); i--) {
-			LEDsend(LEDtable[p[i]-0x30]);
-		}
-
         delay(1000);
     }
 
