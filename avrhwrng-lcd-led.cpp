@@ -69,30 +69,48 @@ void LEDsend(uint8_t data) {
 
 uint8_t rngdice() {
 
-    uint8_t v = 0;
-    bool notok = true;
-    
+    uint8_t s, v0, v1, outval, count;
+    bool notok;
+
+    notok = true;
+    s = 0;
+    count = 0;
+    outval = 0;
+
     while (notok) {
-        v = readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin07));
-        v = (v << 1) |
-            readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin06));
-        delay(1);
-        v = (v << 1) |
-            readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin07));
-        v = (v << 1) |
-            readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin06));
-        delay(1);
-        v = (v << 1) |
-            readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin07));
-        v = (v << 1) |
-            readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin06));
-        // 0 <= v <= 63    
-        if (v <= 59) {
-            notok = false;
+        if (s == 0) {
+            // 1st bit state
+            v0 = readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin06));
+            v1 = readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin07));
+            s = 1;
+        } else {
+            // perform von Neumann test for each bit
+            if (v0 != readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin06))) {
+                outval = outval + outval;
+                if (v0 == 1) {
+                    outval++;
+                }
+                count++;
+            }
+            if (v1 != readGpioPinDigitalV(makeGpioVarFromGpioPin(pPin07))) {
+                outval = outval + outval;
+                if (v1 == 1) {
+                    outval++;
+                }
+                count++;
+            }
+            s = 0;
+        }
+        // 0 <= outval <= 255
+        if (count >= 8) {
+            count = 0;
+            if (outval < 252) {
+                notok = false;
+            }
         }
     }
 
-    return (v % 6) + 1;
+    return (outval % 6) + 1;
 }
 
 int main() {
@@ -135,6 +153,7 @@ int main() {
         for (i = 0; i < sizeof(p) - 1; i++) {
             p[i] = p[i + 1];
         }
+
         c = 0x30 + d;
         p[sizeof(p) - 1] = c;
 
@@ -149,6 +168,7 @@ int main() {
 		}
 
         delay(1000);
+
     }
 
 }
